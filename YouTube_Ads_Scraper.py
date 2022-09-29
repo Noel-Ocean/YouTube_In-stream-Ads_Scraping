@@ -9,15 +9,16 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
+import os 
 import pandas as pd
 
 
-def youtube_ads_scraper(local_chrome_driver_path, target_video, target_video_name, html_dict, number_of_fresh_times, region):
+def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_video_name, html_dict, number_of_fresh_times):
 
     print(f"Start scraping ads for {target_video_name}...")
 
     chrome_driver=webdriver.Chrome(local_chrome_driver_path)
-    chrome_driver.get(target_video);  # chrome_driver.maximize_window()
+    chrome_driver.get(target_video_link);  # chrome_driver.maximize_window()
     action = ActionChains(chrome_driver)
 
     time_list, ad_list, ad_number_list=[],[],[]
@@ -81,7 +82,7 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video, target_video_nam
         ad_number_list.append(ad_number)
 
     video_title_list=[target_video_name for i in range(number_of_fresh_times)]
-    video_link_list=[target_video for i in range(number_of_fresh_times)]
+    video_link_list=[target_video_link for i in range(number_of_fresh_times)]
 
     RESULT=pd.DataFrame({
         "HKT_watching":time_list,
@@ -95,6 +96,16 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video, target_video_nam
 
     return RESULT
 
+#################################################################################################################### 
+# variables and arguments
+#################################################################################################################### 
+region="hk"
+today_date=datetime.datetime.today().date()
+
+search_terms_excel=r"C:\Users\Noel\Desktop\Alcohol_marketing\Python\DataCollection_SearchTerms.xlsx"
+yt=pd.read_excel(search_terms_excel, sheet_name="youtube")
+yt_link_list=yt["link"]
+
 html_dict_defined={
     "video_pause":'#movie_player > div.ytp-chrome-bottom > div.ytp-chrome-controls > div.ytp-left-controls > button',
     "ad_count": 'ytp-ad-simple-ad-badge',
@@ -106,17 +117,22 @@ html_dict_defined={
 #################################################################################################################### 
 # RUN 
 #################################################################################################################### 
-DATA=[]
-for i in range(2):
+data=[]
+for index, link in enumerate(yt_link_list):
+    print(index)
     scraper_data=youtube_ads_scraper(
         local_chrome_driver_path=r"C:\Users\Noel\Desktop\Alcohol_marketing\Python\chromedriver.exe",
-        target_video=top_video, target_video_name=top_video_name,
+        target_video_link=link, target_video_name=yt["Most popular YouTube videos based on total global views as of April 2022"][index],
         html_dict=html_dict_defined,
         number_of_fresh_times=2,
-        region="HK"
-    ); DATA.append(scraper_data)
+    ); data.append(scraper_data)
     time.sleep(5)
 
 print("Done!")
-OUTPUT=pd.concat(DATA).reset_index(drop=True)
-OUTPUT
+
+#################################################################################################################### 
+# Reshape to save 
+####################################################################################################################
+output=pd.concat(data).reset_index(drop=True)
+output_save_path=r"C:\Users\Noel\Desktop\Alcohol_marketing\Data"; os.chdir(output_save_path)
+output.to_csv(f"{region}_{today_date}.csv")
