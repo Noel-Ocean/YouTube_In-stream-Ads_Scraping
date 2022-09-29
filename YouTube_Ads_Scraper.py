@@ -22,11 +22,14 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_vide
     action = ActionChains(chrome_driver)
 
     time_list, ad_list, ad_number_list=[],[],[]
+    
     for i in range(number_of_fresh_times):
-        ad_search_time=datetime.datetime.now()
+        ad_search_time=datetime.datetime.now().strftime("%H:%M:%S")
+
         video_pause_find=WebDriverWait(chrome_driver,30).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, html_dict["video_pause"])))
         action.move_to_element(video_pause_find).click().perform()
+        
         time.sleep(2)
 
         try: 
