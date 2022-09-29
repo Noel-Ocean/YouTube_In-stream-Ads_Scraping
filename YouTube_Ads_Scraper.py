@@ -1,4 +1,6 @@
+import os 
 import json, time, schedule, datetime
+import pandas as pd
 import selenium
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -9,9 +11,6 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
-import os 
-import pandas as pd
-
 
 def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_video_name, html_dict, number_of_fresh_times):
 
