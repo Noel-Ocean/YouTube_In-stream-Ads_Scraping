@@ -11,8 +11,9 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.alert import Alert
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support import expected_conditions as EC
+from numba import jit, cuda, njit
 
-def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_video_name, html_dict, number_of_fresh_times):
+def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_video_name, html_dict, number_of_times):
 
     print(f"Start scraping ads for {target_video_name}...")
 
@@ -22,7 +23,7 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_vide
 
     time_list, ad_list, ad_number_list=[],[],[]
     
-    for i in range(number_of_fresh_times):
+    for i in range(number_of_times):
         ad_search_time=datetime.datetime.now().strftime("%H:%M:%S")
 
         video_pause_find=WebDriverWait(chrome_driver,30).until(
@@ -62,7 +63,7 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_vide
 
                 action.move_to_element(video_pause_find).click().perform()
                 time.sleep(ad_duration_text)
-                time.sleep(5)
+                time.sleep(10)
 
                 video_id_find_2=chrome_driver.find_element(By.CSS_SELECTOR, html_dict["ad_id"])
                 video_id_2=video_id_find_2.text.split("/")[0]
@@ -83,8 +84,8 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_vide
         ad_list.append(ad_link)
         ad_number_list.append(ad_number)
 
-    video_title_list=[target_video_name for i in range(number_of_fresh_times)]
-    video_link_list=[target_video_link for i in range(number_of_fresh_times)]
+    video_title_list=[target_video_name for i in range(number_of_times)]
+    video_link_list=[target_video_link for i in range(number_of_times)]
 
     RESULT=pd.DataFrame({
         "HKT_watching":time_list,
@@ -101,12 +102,8 @@ def youtube_ads_scraper(local_chrome_driver_path, target_video_link, target_vide
 #################################################################################################################### 
 # variables and arguments
 #################################################################################################################### 
-region="hk"
-today_date=datetime.datetime.today().date()
-
 search_terms_excel=r"C:\Users\Noel\Desktop\Alcohol_marketing\Python\DataCollection_SearchTerms.xlsx"
-yt=pd.read_excel(search_terms_excel, sheet_name="youtube")
-yt_link_list=yt["link"]
+yt=pd.read_excel(search_terms_excel, sheet_name="youtube"); yt_link_list=yt["link"]
 
 html_dict_defined={
     "video_pause":'#movie_player > div.ytp-chrome-bottom > div.ytp-chrome-controls > div.ytp-left-controls > button',
@@ -114,27 +111,34 @@ html_dict_defined={
     "ad_duration": 'ytp-ad-duration-remaining',
     "video_stats": 'body > div.ytp-popup.ytp-contextmenu > div > div > div:nth-child(7) > div.ytp-menuitem-label',
     "ad_id": '#movie_player > div.html5-video-info-panel > div > div:nth-child(1) > span'
-}
+}; region="usa"
 
 #################################################################################################################### 
 # RUN 
 #################################################################################################################### 
+today=datetime.datetime.today()
+start_time=datetime.datetime.now()
+
 data=[]
 for index, link in enumerate(yt_link_list):
     print(index)
     scraper_data=youtube_ads_scraper(
         local_chrome_driver_path=r"C:\Users\Noel\Desktop\Alcohol_marketing\Python\chromedriver.exe",
-        target_video_link=link, target_video_name=yt["Most popular YouTube videos based on total global views as of April 2022"][index],
+        target_video_link=link, target_video_name=yt["most_viewed_202209"][index],
         html_dict=html_dict_defined,
-        number_of_fresh_times=2,
+        number_of_times=2
     ); data.append(scraper_data)
     time.sleep(5)
 
 print("Done!")
 
+end_time=datetime.datetime.now()
+print(f"Time spent: {end_time-start_time}")
+
 #################################################################################################################### 
 # Reshape to save 
 ####################################################################################################################
 output=pd.concat(data).reset_index(drop=True)
-output_save_path=r"C:\Users\Noel\Desktop\Alcohol_marketing\Data"; os.chdir(output_save_path)
-output.to_csv(f"{region}_{today_date}.csv")
+output_save_path=r"C:\Users\Noel\Desktop\Alcohol_marketing\Data_YouTube\01_Raw"; os.chdir(output_save_path)
+output_filename=f"{region}_{today.date()}_{today.hour}{today.minute}.csv"
+print(output_filename); output.to_csv(output_filename)
